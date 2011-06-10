@@ -6,9 +6,9 @@
   - subscribes to the topic "inTopic"
 */
 
-#include <SPI.h>
-#include <Ethernet.h>
-#include <PubSubClient.h>
+/* #include <SPI.h> */
+/* #include <Ethernet.h> */
+#include <PubSubNanode.h>
 
 // Update these with values suitable for your network.
 byte mac[]    = {  0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0xED };
@@ -23,7 +23,7 @@ PubSubClient client(server, 1883, callback);
 
 void setup()
 {
-  Ethernet.begin(mac, ip);
+  /* Ethernet.begin(mac, ip); */
   if (client.connect("arduinoClient")) {
     client.publish("outTopic","hello world");
     client.subscribe("inTopic");

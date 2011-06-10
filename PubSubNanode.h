@@ -1,5 +1,5 @@
 /*
- PubSubClient.h - A simple client for MQTT.
+ PubSubNanode.h - A simple client for MQTT.
   Nicholas O'Leary
   http://knolleary.net
 */
@@ -7,7 +7,7 @@
 #ifndef PubSubClient_h
 #define PubSubClient_h
 
-#include "Client.h"
+/* #include "Client.h" */
 
 #define MAX_PACKET_SIZE 128
 #define KEEPALIVE 15000 // max value = 255000
@@ -32,7 +32,7 @@
 
 class PubSubClient {
 private:
-   Client _client;
+   /* Client _client; */
    uint8_t buffer[MAX_PACKET_SIZE];
    uint8_t nextMsgId;
    long lastOutActivity;
