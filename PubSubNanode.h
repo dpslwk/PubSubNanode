@@ -7,8 +7,15 @@
 #ifndef PubSubClient_h
 #define PubSubClient_h
 
-/* #include "Client.h" */
+#include "EtherShield.h"
 
+// packet buffer for EtherSheild
+// Packet buffer, must be big enough to packet and payload
+// Estimate at ~ MAX_PACKET_SIZE * 1.5
+#define BUFFER_SIZE 200
+static uint8_t esBuf[BUFFER_SIZE+1];
+
+#defien QUE_SIZE 4
 #define MAX_PACKET_SIZE 128
 #define KEEPALIVE 15000 // max value = 255000
 
@@ -30,9 +37,20 @@
 #define MQTTDISCONNECT  14 << 4 // Client is Disconnecting
 #define MQTTReserved    15 << 4 // Reserved
 
+
+
 class PubSubClient {
 private:
-   /* Client _client; */
+   EtherShield _es;
+	uint8_t serverip;
+	uint16_t port;
+	uint8_t que[QUE_SIZE][MAX_PACKET_SIZE];
+	uint8_t queLength[QUE_SIZE];
+	uint8_t queHead;
+	uint8_t queTail;
+	uint8_t queCount;
+	bool resultWaitFlag;
+	bool tcpReqFlag;
    uint8_t buffer[MAX_PACKET_SIZE];
    uint8_t nextMsgId;
    long lastOutActivity;
@@ -43,9 +61,12 @@ private:
    uint8_t readByte();
    int write(uint8_t header, uint8_t* buf, uint8_t length);
    uint8_t writeString(char* string, uint8_t* buf, uint8_t pos);
+	int queWrite(uint8_t* buf, uint8_t length);
+	uint16_t queRead(uint8_t); // datafill callback
 public:
    PubSubClient();
    PubSubClient(uint8_t *, uint16_t, void(*)(char*,uint8_t*,int));
+	int init(unit8_t *, uint8_t *, uint8_t *, uint16_t);
    int connect(char *);
    int connect(char*, char*, uint8_t, uint8_t, char*);
    void disconnect();

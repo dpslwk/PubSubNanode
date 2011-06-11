@@ -5,16 +5,44 @@
 */
 
 #include "PubSubNanode.h"
-/* #include "Client.h" */
+#include "EtherSheild.h"
 #include "string.h"
 #include "wiring.h"
 
-PubSubClient::PubSubClient() /* : _client(0) */{
+PubSubClient::PubSubClient() : _es() {
 }
  
-PubSubClient::PubSubClient(uint8_t *ip, uint16_t port, void (*callback)(char*,uint8_t*,int)) /* : _client(ip,port) */ {
-   this->callback = callback;
+PubSubClient::PubSubClient(uint8_t *serverip, uint16_t port, void (*callback)(char*,uint8_t*,int)) : _es() {
+	//Set the Server IP 
+	_es.ES_client_tcp_set_serverip(serverip);
+	//Serial.println("Init serverip ip");
+	
+	this->callback = callback;
+	this->port = port;
 }
+
+int PubSubClient::init(unit8_t *mymac, uint8_t *myip, uint8_t *gwip, uint16_t intiPort){
+	// initialize SPI
+	_es.ES_enc28j60SpiInit();
+	//Serial.println("SPI Inint");
+	
+	// initialize enc28j60
+	_es.ES_enc28j60Init(mymac);
+	//Serial.println("Init mac");
+	
+	//init the ethernet/ip layer:
+	_es.ES_init_ip_arp_udp_tcp(mymac, myip, initPort);
+	//Serial.println("Init ip");
+	
+	//Set Gateway ip
+	_es.ES_client_set_gwip(gwip);
+	//Serial.println("Init Gateway ip");
+	
+	// clear queState counters
+	queHead = queTail = queCount = 0;
+	
+}
+
 int PubSubClient::connect(char *id) {
    return connect(id,0,0,0,0);
 }
@@ -170,7 +198,7 @@ int PubSubClient::write(uint8_t header, uint8_t* buf, uint8_t length) {
    /* _client.write(header); */
    /* _client.write(length); */
    /* _client.write(buf,length); */
-   lastOutActivity = millis();
+   // lastOutActivity = millis();
    return 0;
 }
 
@@ -213,6 +241,52 @@ int PubSubClient::connected() {
    int rc = /* (int)_client.connected()*/ ;
    if (!rc) /* _client.stop() */; 
    return rc;
+}
+
+
+int PubSubClient::queWrite(uint8_t* buf, uint8_t length){
+	// check for room in que ret -1 if full
+	// copy buf to que tail
+	// store lenght
+	// inc tail and count
+	// return 0
+	if (queCount < QUE_SIZE) {
+		for (int i=0 ; i <= length; i++) {
+			que[queTail][i] = buf[i];
+		}
+		queLenght[queTail] = lenght;
+		if (queTail == QUE_SIZE) {
+			queTail = 0;
+		} else {
+			queTail++;
+		}
+		queCount++;
+		return(0);
+	} else {
+		return(1);
+	}
+
+}
+
+
+uint16_t PubSubClient::queRead(uint8_t fd){
+	// check theres something in the que, if not ret 0
+	// copy head to to buf
+	// inc head, dec count
+	// return plen
+	uint16_t plen = 0; //packet lenght
+	if (queCount != 0) {
+		plen=es.ES_fill_tcp_data_p(esBuf,queLenght[queHead],que[queHead]);
+		//Serial.println("Data Fill")
+		if (queHead == QUE_SIZE) {
+			queHead = 0;
+		} else {
+			queHead++;
+		}
+		queCount--;
+	}
+	lastOutActivity = millis();
+	return(plen);
 }
 
 
