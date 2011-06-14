@@ -6,7 +6,7 @@
   - subscribes to the topic "inTopic"
 */
 
-#include <EtherSheild.h>
+#include <EtherShield.h>
 #include <PubSubNanode.h>
 
 // Please modify the following lines. mac and ip have to be unique
@@ -36,7 +36,7 @@ void callback(char* topic, byte* payload,int length) {
 }
 
 
-PubSubClient client(server, MQTT_PORT, callback);
+PubSubNanode client(server, MQTT_PORT, callback);
 
 void setup()
 {

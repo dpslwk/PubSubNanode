@@ -4,18 +4,20 @@
   http://knolleary.net
 */
 
-#ifndef PubSubClient_h
-#define PubSubClient_h
+#ifndef PubSubNanode_h
+#define PubSubNanode_h
 
-#include "EtherShield.h"
+#include <EtherShield.h>
+#include <inttypes.h>
 
 // packet buffer for EtherSheild
 // Packet buffer, must be big enough to packet and payload
 // Estimate at ~ MAX_PACKET_SIZE * 1.5
 #define BUFFER_SIZE 200
+// ***LWK*** could this be moved to a private??
 static uint8_t esBuf[BUFFER_SIZE+1];
 
-#defien QUE_SIZE 4
+#define QUE_SIZE 4
 #define MAX_PACKET_SIZE 128
 #define KEEPALIVE 15000 // max value = 255000
 
@@ -39,43 +41,44 @@ static uint8_t esBuf[BUFFER_SIZE+1];
 
 
 
-class PubSubClient {
+class PubSubNanode {
 private:
-   EtherShield _es;
+	EtherShield _es;
 	uint8_t serverip;
 	uint16_t port;
 	uint8_t que[QUE_SIZE][MAX_PACKET_SIZE];
-	uint8_t queLength[QUE_SIZE];
+	uint16_t queLength[QUE_SIZE];
 	uint8_t queHead;
 	uint8_t queTail;
 	uint8_t queCount;
 	bool resultWaitFlag;
 	bool tcpReqFlag;
-   uint8_t buffer[MAX_PACKET_SIZE];
-   uint8_t nextMsgId;
-   long lastOutActivity;
-   long lastInActivity;
-   bool pingOutstanding;
-   void (*callback)(char*,uint8_t*,int);
-   uint8_t readPacket();
-   uint8_t readByte();
-   int write(uint8_t header, uint8_t* buf, uint8_t length);
-   uint8_t writeString(char* string, uint8_t* buf, uint8_t pos);
+	bool rc;
+	uint8_t buffer[MAX_PACKET_SIZE];
+	uint8_t nextMsgId;
+	long lastOutActivity;
+	long lastInActivity;
+	bool pingOutstanding;
+	void (*callback)(char*,uint8_t*,int);
+	uint8_t readPacket(uint16_t, uint16_t);
+	int write(uint8_t header, uint8_t* buf, uint8_t length);
+	uint8_t writeString(char* string, uint8_t* buf, uint8_t pos);
 	int queWrite(uint8_t* buf, uint8_t length);
-	uint16_t queRead(uint8_t); // datafill callback
+	static uint16_t queRead(uint8_t); // datafill callback
+	static uint8_t resultCallback(uint8_t fd, uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data);
 public:
-   PubSubClient();
-   PubSubClient(uint8_t *, uint16_t, void(*)(char*,uint8_t*,int));
-	int init(unit8_t *, uint8_t *, uint8_t *, uint16_t);
-   int connect(char *);
-   int connect(char*, char*, uint8_t, uint8_t, char*);
-   void disconnect();
-   int publish(char *, char *);
-   int publish(char *, uint8_t *, uint8_t);
-   int publish(char *, uint8_t *, uint8_t, uint8_t);
-   void subscribe(char *);
-   int loop();
-   int connected();
+	PubSubNanode();
+	PubSubNanode(uint8_t *, uint16_t, void(*)(char*,uint8_t*,int));
+	int init(uint8_t *, uint8_t *, uint8_t *, uint16_t);
+	int connect(char *);
+	int connect(char*, char*, uint8_t, uint8_t, char*);
+	void disconnect();
+	int publish(char *, char *);
+	int publish(char *, uint8_t *, uint8_t);
+	int publish(char *, uint8_t *, uint8_t, uint8_t);
+	void subscribe(char *);
+	int loop();
+	int connected();
 };
 
 
