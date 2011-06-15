@@ -41,9 +41,9 @@ static uint8_t esBuf[BUFFER_SIZE+1];
 
 
 
-class PubSubNanode {
+class PubSubNanode: public EtherShield {
 private:
-	EtherShield _es;
+	// EtherShield _es;
 	uint8_t serverip;
 	uint16_t port;
 	uint8_t que[QUE_SIZE][MAX_PACKET_SIZE];
@@ -64,8 +64,9 @@ private:
 	int write(uint8_t header, uint8_t* buf, uint8_t length);
 	uint8_t writeString(char* string, uint8_t* buf, uint8_t pos);
 	int queWrite(uint8_t* buf, uint8_t length);
-	static uint16_t queRead(uint8_t); // datafill callback
-	static uint8_t resultCallback(uint8_t fd, uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data);
+	uint16_t queRead(uint8_t); // datafill callback
+	uint8_t resultCallback(uint8_t fd, uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data);
+	uint8_t ES_client_tcp_req(uint8_t (PubSubNanode::*)(uint8_t, uint8_t, uint16_t, uint16_t), uint16_t (PubSubNanode::*)(uint8_t), uint16_t&);
 public:
 	PubSubNanode();
 	PubSubNanode(uint8_t *, uint16_t, void(*)(char*,uint8_t*,int));

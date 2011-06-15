@@ -9,12 +9,12 @@
 #include "string.h"
 #include "wiring.h"
 
-PubSubNanode::PubSubNanode() : _es() {
+PubSubNanode::PubSubNanode() : EtherShield() {
 }
 
-PubSubNanode::PubSubNanode(uint8_t *serverip, uint16_t port, void (*callback)(char*,uint8_t*,int)) : _es() {
+PubSubNanode::PubSubNanode(uint8_t *serverip, uint16_t port, void (*callback)(char*,uint8_t*,int)) : EtherShield() {
 	//Set the Server IP 
-	_es.ES_client_tcp_set_serverip(serverip);
+	ES_client_tcp_set_serverip(serverip);
 	//Serial.println("Init serverip ip");
 	
 	this->callback = callback;
@@ -29,19 +29,19 @@ PubSubNanode::PubSubNanode(uint8_t *serverip, uint16_t port, void (*callback)(ch
 
 int PubSubNanode::init(uint8_t *mymac, uint8_t *myip, uint8_t *gwip, uint16_t initPort) {
 	// initialize SPI
-	_es.ES_enc28j60SpiInit();
+	ES_enc28j60SpiInit();
 	//Serial.println("SPI Inint");
 	
 	// initialize enc28j60
-	_es.ES_enc28j60Init(mymac);
+	ES_enc28j60Init(mymac);
 	//Serial.println("Init mac");
 	
 	//init the ethernet/ip layer:
-	_es.ES_init_ip_arp_udp_tcp(mymac, myip, initPort);
+	ES_init_ip_arp_udp_tcp(mymac, myip, initPort);
 	//Serial.println("Init ip");
 	
 	//Set Gateway ip
-	_es.ES_client_set_gwip(gwip);
+	ES_client_set_gwip(gwip);
 	//Serial.println("Init Gateway ip");
 	
 }
@@ -110,7 +110,7 @@ int PubSubNanode::connect(char *id, char* willTopic, uint8_t willQos, uint8_t wi
 }
 
 
-static uint8_t PubSubNanode::resultCallback(uint8_t fd, uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data) {
+uint8_t PubSubNanode::resultCallback(uint8_t fd, uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data) {
 	if (!statuscode && len_of_data >0) {
 		uint8_t len = readPacket(data_start_pos_in_buf, len_of_data);
 		
@@ -145,6 +145,8 @@ static uint8_t PubSubNanode::resultCallback(uint8_t fd, uint8_t statuscode,uint1
 			}
 		}
 	}
+	// close sesion now
+    return 1;
 }
 	
 // modify for result_callback use
@@ -181,26 +183,21 @@ int PubSubNanode::loop() {
 	if (connected()) {
 		uint16_t dat_p;
         // handle ping and wait for a tcp packet
-		dat_p=_es.ES_packetloop_icmp_tcp(esBuf,_es.ES_enc28j60PacketReceive(BUFFER_SIZE, esBuf));
+		dat_p=ES_packetloop_icmp_tcp(esBuf,ES_enc28j60PacketReceive(BUFFER_SIZE, esBuf));
 		
 		// some thing to send?
 		if (tcpReqFlag == 1) {
-			_es.ES_client_tcp_req(&resultCallback, &queRead, port);
+			ES_client_tcp_req(&PubSubNanode::resultCallback, &PubSubNanode::queRead, port);
 			tcpReqFlag = 0;
 			resultWaitFlag = 1;
 		} 
 		
 		if(dat_p==0) {
 			// we are idle here
-			if (_es.ES_client_waiting_gw() ){
+			if (ES_client_waiting_gw() ){
 				return 1;
 			}
-			
-			
 		}
-
-			
-			
 			
 		long t = millis();
 		if ((t - lastInActivity > KEEPALIVE) || (t - lastOutActivity > KEEPALIVE)) {
@@ -221,6 +218,11 @@ int PubSubNanode::loop() {
 		return 1;
 	}
 	return 0;
+}
+
+
+uint8_t ES_client_tcp_req(uint8_t (PubSubNanode::*result_callback)(uint8_t fd,uint8_t statuscode,uint16_t data_start_pos_in_buf, uint16_t len_of_data), uint16_t (PubSubNanode::*datafill_callback)(uint8_t fd),uint16_t port ) {
+	return client_tcp_req(result_callback, datafill_callback, port);
 }
 
 int PubSubNanode::publish(char* topic, char* payload) {
@@ -378,7 +380,7 @@ int PubSubNanode::queWrite(uint8_t* buf, uint8_t length){
 }
 */
 
-static uint16_t PubSubNanode::queRead(uint8_t fd){
+uint16_t PubSubNanode::queRead(uint8_t fd){
 	// check theres something in the que, if not ret 0
 	// copy head to to buf
 	// inc head, dec count
@@ -386,7 +388,7 @@ static uint16_t PubSubNanode::queRead(uint8_t fd){
 	uint16_t plen = 0; //packet lenght
 	if (queCount != 0) {
 		
-		plen = _es.ES_fill_tcp_data_len(esBuf, 0, (char*)que[queHead], queLength[queHead]);
+		plen = ES_fill_tcp_data_len(esBuf, 0, (char*)que[queHead], queLength[queHead]);
 		
 		//Serial.println("Data Fill")
 		if (queHead == QUE_SIZE) {
